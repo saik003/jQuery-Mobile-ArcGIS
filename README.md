@@ -22,9 +22,9 @@ Tiene la siguientes funcionalidades:
 
 ###APIS Usadas:
 
-**ArcGIS JavaScript 3.9**
+* ArcGIS JavaScript 3.9
 
-**jQuery Mobile 1.4.1**
+* jQuery Mobile 1.4.1
 
 ###Previsualización
 
@@ -33,13 +33,15 @@ Tiene la siguientes funcionalidades:
 <img width="200px" src="http://91.121.152.137/images/jquery5.png" />
 
 
-###Ejemplos
-[Ver demostración](http://91.121.152.137/apps/jquery/index.html).
+###Ejemplo:
+[Ver demostración](http://saik003.github.io/jQuery-Mobile-ArcGIS).
 
-[Aquí](https://github.com/saik003/Apps-JavaScript/tree/master/jQueryMobile) el código para descargar.  
 
-###Versiones del API de ESRI soportadas
-Probado en versiones: 3.9
+### Código:
+[Aquí](https://github.com/saik003/jQuery-Mobile-ArcGIS) el código para descargar.  
 
-Todos los derechos reservados.
+###Versiones del API de ESRI soportadas:
+* Versión - 3.9 
+
+
 
