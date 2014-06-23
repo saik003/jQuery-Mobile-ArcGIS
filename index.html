@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <!-- Sets whether a web application runs in full-screen mode. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <!-- Sets the style of the status bar for a web application. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Mapa de suelo industrial de CLM</title>
+
+  <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.1/jquery.mobile-1.4.1.min.css"/>
+  <link rel="stylesheet" href="http://js.arcgis.com/3.8/js/esri/css/esri.css"/>
+  <link rel="stylesheet" type="text/css" href="agsjs/css/agsjs.css" />
+  <link rel="stylesheet" type="text/css" href="css/jmobile.css" />
+  <!--Estilo para la interfaz de la app-->
+  <style>
+
+    html, body {
+      height: 100%;
+      margin: 0px;
+      padding: 0px;
+      width: 100%;
+    }
+
+    .ui-content {
+      padding: 0 !important;
+
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      z-index: 0;
+      overflow:hidden;
+      background: url(images/ajax-loader.gif) no-repeat center center;
+    }
+    #mapDetails {
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      z-index: 0;
+    }
+
+     #LocateButton {
+      position: absolute;
+      top: 95px;
+      left: 20px;
+      z-index: 50;
+    }
+    #LocateButton2 {
+      position: absolute;
+      top: 95px;
+      left: 20px;
+      z-index: 50;
+    }
+    #LegendButton {
+      position: absolute;
+      bottom: 50px;
+      left: 15px;
+      z-index: 51;
+      border-radius: 5px;
+      width: 30px;
+      height: 30px;
+     background-color: rgba(102,102,102,0.90);
+     border-width: 0px;
+
+    }
+
+    .ui-listview>.ui-li-static, .ui-listview>.ui-li-divider, .ui-listview>li>a.ui-btn {
+    margin: 0;
+    display: block;
+    position: relative;
+    text-align: left;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+#lower {
+    width: 90%;
+    position: absolute;
+    bottom: 0;
+    height: 50px;
+    background: red;
+}
+
+#panel {
+    display: block;
+/*    height: 100px;*/
+    background-color: #aaaaaa;
+    padding: 10px;
+}
+
+#panelMuestra{
+  height: 30px;
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+  background: red ;
+}
+
+#right-panel {
+    width: 10em;
+}
+
+
+.ui-panel.ui-panel-position-right {
+    width: 10em;
+}
+ 
+.ui-panel.ui-panel-closed {
+    width: 0;
+}
+ 
+
+/* -----------Estilo para que el panel de la derecha sea mas estrecho---------------------------*/
+.ui-panel-position-right {
+    right: 10em
+}
+ 
+.ui-panel-animate.ui-panel-position-right.ui-panel-display-overlay, .ui-panel-animate.ui-panel-position-right.ui-panel-display-push {
+    -webkit-transform: translate3d(10em, 0, 0);
+    -moz-transform: translate3d(10em, 0, 0);
+    transform: translate3d(10em, 0, 0)
+}
+
+ 
+.ui-panel-content-fixed-toolbar-position-right.ui-panel-content-fixed-toolbar-open, .ui-panel-content-wrap-position-right.ui-panel-content-wrap-open, .ui-panel-dismiss-position-right.ui-panel-dismiss-open {
+    right: 10em
+}
+ 
+.ui-panel-animate.ui-panel-content-fixed-toolbar-position-right.ui-panel-content-fixed-toolbar-open.ui-panel-content-fixed-toolbar-display-reveal, .ui-panel-animate.ui-panel-content-fixed-toolbar-position-right.ui-panel-content-fixed-toolbar-open.ui-panel-content-fixed-toolbar-display-push, .ui-panel-animate.ui-panel-content-wrap-position-right.ui-panel-content-wrap-open.ui-panel-content-wrap-display-reveal, .ui-panel-animate.ui-panel-content-wrap-position-right.ui-panel-content-wrap-open.ui-panel-content-wrap-display-push {
+    -webkit-transform: translate3d(-10em, 0, 0);
+    -moz-transform: translate3d(-10em, 0, 0);
+    transform: translate3d(-10em, 0, 0)
+}
+ 
+@media (min-width:55em) {
+    .ui-responsive-panel.ui-page-panel-open .ui-panel-content-fixed-toolbar-display-push.ui-panel-content-fixed-toolbar-position-left, .ui-responsive-panel.ui-page-panel-open .ui-panel-content-fixed-toolbar-display-reveal.ui-panel-content-fixed-toolbar-position-left, .ui-responsive-panel.ui-page-panel-open .ui-panel-content-wrap-display-push.ui-panel-content-wrap-position-left, .ui-responsive-panel.ui-page-panel-open .ui-panel-content-wrap-display-reveal.ui-panel-content-wrap-position-left {
+        margin-right: 10em
+    }
+ 
+
+}
+
+/*-----------------------------------------------------------------------*/
+
+#textoGaleria{
+  text-align: center;
+  font-weight: bold;
+}
+
+#popupMenu,#popupDistancias,#popupCoordenadas{
+  display: none;
+}
+
+#cruzCoordenadas{
+    position: absolute;
+      z-index: 59;
+      display: none;
+}
+
+#selectMuni{
+  color:black;
+}
+
+
+  </style>
+
+  <!--Configuracion para poder cargar un modulo externo de dojo-->
+  <script type="text/javascript">
+    // helpful for understanding dojoConfig.packages vs. dojoConfig.paths:
+    // http://www.sitepen.com/blog/2013/06/20/dojo-faq-what-is-the-difference-packages-vs-paths-vs-aliases/
+    var dojoConfig = { 
+      paths: {
+      //if you want to host on your own server, download and put in folders then use path like: 
+      agsjs: location.pathname.replace(/\/[^/]+$/, '') + '/agsjs' 
+ 
+      }
+    };
+       
+ </script>
+
+  <script src="http://code.jquery.com/jquery-2.0.0.min.js"></script>
+  <script src="http://code.jquery.com/mobile/1.4.1/jquery.mobile-1.4.1.min.js"></script>
+
+  <script src="http://js.arcgis.com/3.8compact"></script>
+  
+  <!--<script src="js/panel.js"></script>-->
+  <script src="js/muni.js"></script>
+
+ <script>var dojoConfig = { 
+        parseOnLoad: true,
+        locale:'es'
+      };
+    </script>
+
+  <script>
+
+    var map,
+        gallery,
+        basemapGallery,
+        toc,
+        tb,
+        tbMedir,
+        tool,
+        editToolbar,
+        mapDetalle;
+
+    var resultados= new Array();
+
+    var graphicsLayer;
+
+    var poligonoSel;
+
+    //Variable que nos informa si el usuario ha comenzado a dibujar
+    var pintando;
+    var pintandoMedidas;
+
+    var locator;
+    require([
+        "esri/map", "esri/dijit/Gallery", 
+        "esri/dijit/BasemapGallery",
+        "esri/dijit/BasemapLayer",
+        "esri/dijit/Basemap",
+        "esri/geometry/Extent",
+        "esri/SpatialReference",
+        "esri/layers/ArcGISTiledMapServiceLayer",
+        "esri/geometry/Point",
+        "esri/dijit/LocateButton",
+        "dojo/parser",
+        "agsjs/dijit/TOC",
+        "esri/toolbars/draw",
+        "dojo/on",
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/symbols/SimpleLineSymbol",
+        "esri/symbols/PictureFillSymbol",
+        "esri/symbols/CartographicLineSymbol", 
+        "esri/graphic", 
+        "dojo/_base/Color",
+        "esri/tasks/IdentifyTask",
+        "esri/tasks/IdentifyParameters",
+        "esri/layers/GraphicsLayer",
+        "esri/toolbars/edit",
+        "esri/geometry/Polygon",
+        "esri/symbols/SimpleFillSymbol",
+        "esri/tasks/GeometryService",
+        "esri/tasks/AreasAndLengthsParameters",
+        "esri/tasks/LengthsParameters",
+        "esri/tasks/QueryTask",
+        "esri/tasks/query",
+        "esri/tasks/locator",
+        "esri/symbols/TextSymbol",
+        "esri/symbols/Font",
+        "dojo/_base/array",
+        "dojo/fx",
+        "dojo/domReady!"
+      ], function(
+        Map, Gallery,
+        BasemapGallery,
+        BasemapLayer,
+        Basemap,
+        Extent,
+        SpatialReference,
+        ArcGISTiledMapServiceLayer,
+        Point,
+        LocateButton,
+        parser,
+        TOC,
+        Draw,
+        on,
+        SimpleMarkerSymbol,
+        SimpleLineSymbol,
+        PictureFillSymbol,
+        CartographicLineSymbol, 
+        Graphic,
+        Color,
+        IdentifyTask,
+        IdentifyParameters,
+        GraphicsLayer,
+        Edit,
+        Polygon,
+        SimpleFillSymbol,
+        GeometryService,
+        AreasAndLengthsParameters,
+        LengthsParameters,
+        QueryTask,
+        Query,
+        Locator,
+        TextSymbol,
+        Font,
+        array
+      ) {
+
+          //Necesario para usar los componentes de dojo
+          parser.parse(); 
+
+          //Mapa de la aplicación
+          map = new esri.Map('map',{
+            autoResize:false,
+            basemap:"gray"
+          });
+
+          //Creo la instancia al servicio de geometria
+          var geometryService = new GeometryService("http://sampleserver6.arcgisonline.com/arcgis/rest/services/Utilities/Geometry/GeometryServer");
+          geometryService.on("areas-and-lengths-complete", outputAreaAndLength);
+          geometryService.on("lengths-complete", outputLength);
+
+          // **************** IMPORTANTE*************************************************************
+          // Eventos para controlar no perder el mapa cuando pasamos a otra pantalla de la app
+          // Si el mapa se redimensiona no estando en pantalla se pierde la referencia a este y no 
+          // podemos seguir usandolo
+          on(window, 'resize', function() {
+            // prevent map from resizing when not visible. This would error otherwise
+           if ($('#page:visible').length) //pseudo code
+            { 
+              //var ele=$("#page");
+              map.resize();
+              map.reposition();
+              var alto=$('#map').height();
+              var ancho=$('#map').width();
+              $('#cruzCoordenadas').css('top',(alto/2)-$('#cruzCoordenadas').height()/2);
+              $('#cruzCoordenadas').css('left',(ancho/2)-$('#cruzCoordenadas').width()/2);
+            }     
+          });
+
+          function resizeMap() {
+            if ($('#page:visible').length) {
+              $('#map').height($(window).height() - $('#header').height());
+              map.resize();
+              map.reposition();
+              var alto=$('#map').height();
+              var ancho=$('#map').width();
+              $('#cruzCoordenadas').css('top',(alto/2)-$('#cruzCoordenadas').height()/2);
+              $('#cruzCoordenadas').css('left',(ancho/2)-$('#cruzCoordenadas').width()/2);
+
+            }
+          }
+
+          locator = new Locator("http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer");
+
+          locator.on("address-to-locations-complete", showResultsLocalizacion);
+          locator.outSpatialReference= new SpatialReference({wkid:4326});
+
+        
+          // Create and setup editing tools
+          editToolbar = new Edit(map);
+
+          //Creo la instancia de la capa grafica
+          graphicsLayer=new GraphicsLayer();
+
+          //Creo la instancia de la capa grafica
+          graphicsLayerMedidas=new GraphicsLayer();
+
+         
+
+          basemapGallery = new esri.dijit.BasemapGallery({
+            showArcGISBasemaps:true,
+            map:map
+          },"galleryDiv");
+          basemapGallery.startup();
+
+           //Activamos el primer basemap
+          basemapGallery.select("gray"); 
+
+         
+          //Capas operacionales de la aplicacion 
+          var USA = new esri.layers.ArcGISDynamicMapServiceLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer");
+          map.addLayer(USA);
+
+        
+          //Botón de geolocalizacion 
+          var geoLocate = new LocateButton({
+            map: map
+          }, "LocateButton");
+          geoLocate.startup();
+
+          
+          //Agregamos la capa grafica
+          map.addLayer(graphicsLayer);
+
+          //Agregamos la capa grafica de medidas
+          map.addLayer(graphicsLayerMedidas);
+
+          //Evento del botón para medir áreas
+          on(dojo.byId("botonMedirArea"),"click",function(){
+           
+            pintandoMedidas=true;
+            tbMedir.activate(esri.toolbars.Draw.POLYGON);
+
+            //Cerramos el panel
+            $("#left-panel").panel("close");
+
+            // Mostramos el panel en la posicion que pasamos
+            var posicion=map.height;
+
+            $('#popupMenu').show();
+            $('#popupMenu').popup();
+            $('#popupMenu').popup('open',{
+              transition:"slideup",
+              positionTo:"origin",
+              y:posicion,
+            });
+          });
+
+
+           //Evento del botón para medir áreas
+          on(dojo.byId("botonMedirDistancia"),"click",function(){
+            pintandoMedidas=true;
+            tbMedir.activate(esri.toolbars.Draw.POLYLINE);
+
+            //Cerramos el panel
+            $("#left-panel").panel("close");
+
+            // Mostramos el panel en la posicion que pasamos
+            var posicion=map.height;
+            $('#popupMenu').show();
+            $('#popupMenu').popup();
+            $('#popupMenu').popup('open',{
+              transition:"slideup",
+              positionTo:"origin",
+              y:posicion
+            });
+          });
+
+
+          toc = new TOC({
+            map: map,
+            layerInfos: [{
+              layer: USA,
+              title: "USA",
+              collapsed: false,
+              slider: true
+            }/*, {
+              layer: mapaBase1,
+              title: "DynamicMapServiceLayer1"
+              //collapsed: false, // whether this root layer should be collapsed initially, default false.
+              //slider: false // whether to display a transparency slider.
+            }*/]
+          }, 'tocDiv');
+          toc.startup();
+
+          //Creamos los symbolos para dibujar y buscar
+          var markerSymbol = new SimpleMarkerSymbol();
+          markerSymbol.setPath("M16,4.938c-7.732,0-14,4.701-14,10.5c0,1.981,0.741,3.833,2.016,5.414L2,25.272l5.613-1.44c2.339,1.316,5.237,2.106,8.387,2.106c7.732,0,14-4.701,14-10.5S23.732,4.938,16,4.938zM16.868,21.375h-1.969v-1.889h1.969V21.375zM16.772,18.094h-1.777l-0.176-8.083h2.113L16.772,18.094z");
+          markerSymbol.setColor(new Color("#00FFFF"));
+
+          // lineSymbol used for freehand polyline, polyline and line. 
+          var lineSymbol = new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID,
+            new dojo.Color([255,0,0]), 5);
+
+          // fill symbol used for extent, polygon and freehand polygon, use a picture fill symbol
+          // the images folder contains additional fill images, other options: sand.png, swamp.png or stiple.png
+          var fillSymbol = new esri.symbol.SimpleFillSymbol(esri.symbol.SimpleFillSymbol.STYLE_SOLID,
+            new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_DASHDOT,
+            new dojo.Color([255,0,0]), 2),new dojo.Color([255,255,0,0.25]));
+
+          // Para la seleccion 
+          var fillSymbolSelect = new esri.symbol.SimpleFillSymbol(esri.symbol.SimpleFillSymbol.STYLE_SOLID,
+            new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID,
+            new dojo.Color([0,0,255]), 2),new dojo.Color([0,0,255,0.25]));
+
+          //Simbolo para marcar los vertices cuando estamos dibujando
+          var markerSymbolVertex=new SimpleMarkerSymbol(
+            SimpleMarkerSymbol.STYLE_CIRCLE, 10,
+            new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
+            new Color([255,255,0]), 1),
+            new Color([255,0,0,0.75]));
+
+          //Barra para poder dibujar
+          tb = new Draw(map);
+          tb.on("draw-end", addGraphic);
+         
+          tbMedir= new Draw(map);
+          tbMedir.on("draw-end", addGraphicMedidas);
+
+          // Cuando acaba de medir mostramos el simbolo en pantalla y lanzamos el identify
+          function addGraphic(evt) {
+            
+            //deactivate the toolbar and clear existing graphics 
+            tb.deactivate(); 
+
+            // Establecemos la variable pintando a false para saber que no 
+            // estamos dibujando
+            pintando=false;
+
+            // figure out which symbol to use
+            var symbol;
+            if ( evt.geometry.type === "point" || evt.geometry.type === "multipoint") {
+              symbol = markerSymbol;
+            } else if ( evt.geometry.type === "line" || evt.geometry.type === "polyline") {
+              symbol = lineSymbol;
+            }
+            else {
+              symbol = fillSymbol;
+            }
+
+            graphicsLayer.add(new Graphic(evt.geometry, symbol));
+
+            //Ahora con la geometria realizamos la query
+            lanzarConsulta(evt.geometry);
+          }
+
+          //Funcion que se ejecuta cuando acabamos de 
+          function addGraphicMedidas(evt) {
+
+            tbMedir.deactivate(); 
+
+            pintandoMedidas=false;
+            
+            
+            if ( evt.geometry.type === "line" || evt.geometry.type === "polyline") {
+              symbol = lineSymbol;
+              graphicsLayerMedidas.add(new Graphic(evt.geometry, symbol));
+              ObtenerDistancias(evt.geometry);
+            }
+            else {
+              symbol = fillSymbol;
+              graphicsLayerMedidas.add(new Graphic(evt.geometry, symbol));
+              ObtenerMedidas(evt.geometry);
+            }
+          
+            //$("#left-panel").panel("open");
+
+          }
+
+
+           function ObtenerDistancias(geo){
+            var lengthParams = new LengthsParameters();
+            lengthParams.polylines = [geo];
+            lengthParams.lengthUnit = esri.tasks.GeometryService.UNIT_METER;
+            lengthParams.geodesic = true;
+            geometryService.lengths(lengthParams);
+           }
+
+           function outputLength(evtObj){
+             var result = evtObj.result;
+            var posicion=map.height;
+            $("#pDistancias").empty();
+            $("#pDistancias").append("Distancia: " + result.lengths[0].toFixed(3) + " metros");
+            $('#popupDistancias').show();
+            $('#popupDistancias').popup();
+            $('#popupDistancias').popup('open',{
+              transition:"slideup",
+              positionTo:"origin",
+              y:posicion
+            });
+            if ($('#btnBorraGraficoMedidas').length==0) {
+              $("#listaIdentyMedir").append('<div id="btnBorraGraficoMedidas" style="margin: 10px; height:40px; text-align:center"><button onclick="borrarSelMedidas();" class="ui-btn">Limpiar medidas</button></div>');
+            }
+           }
+
+
+
+          // Función que lanza la consulta para obtener las medidas del poligono creado
+          function ObtenerMedidas(geo){
+            var areasAndLengthParams = new AreasAndLengthsParameters();
+            areasAndLengthParams.lengthUnit = GeometryService.UNIT_METER;
+            areasAndLengthParams.areaUnit = GeometryService.UNIT_SQUARE_METERS;
+            areasAndLengthParams.calculationType = "geodesic";
+            geometryService.simplify([geo], function(simplifiedGeometries) {
+              areasAndLengthParams.polygons = simplifiedGeometries;
+              geometryService.areasAndLengths(areasAndLengthParams);
+            });
+          }
+
+          // Función que obtiene el area solicitada
+          function outputAreaAndLength(evtObj){
+            var result = evtObj.result;
+             // Mostramos el panel en la parte inferior de la pantalla
+            var posicion=map.height;
+            $("#pDistancias").empty();
+            $("#pDistancias").append("Area: " + result.areas[0].toFixed(3) + " metros cuadrados<br>");
+              $("#pDistancias").append("Distancia: " + result.lengths[0].toFixed(3) + " metros")
+               $('#popupDistancias').show();
+            $('#popupDistancias').popup();
+            $('#popupDistancias').popup('open',{
+              transition:"slideup",
+              positionTo:"origin",
+              y:posicion
+            });
+
+             if ($('#btnBorraGraficoMedidas').length==0) {
+              $("#listaIdentyMedir").append('<div id="btnBorraGraficoMedidas" style="margin: 10px; height:40px; text-align:center"><button onclick="borrarSelMedidas();" class="ui-btn">Limpiar medidas</button></div>');
+               $("#listaIdentyMedir").append('<div id="divVerMedidas" style="margin: 10px; height:40px; text-align:center"><button onclick="btnVerMedidas();" class="ui-btn">Ver ultima medida</button></div>');
+            }
+
+
+          }
+
+          // Función que lanza la consulta de identificar
+          function lanzarConsulta(geo){
+
+            $.mobile.loading( 'show', {
+              text: 'Buscando Ciudades',
+              textVisible: true,
+              theme: 'a',
+              html: ""
+            });
+
+            var identify = new esri.tasks.IdentifyTask("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer");
+            var identifyParams = new IdentifyParameters();
+            identifyParams.geometry = geo;
+            identifyParams.mapExtent = map.extent;
+            identifyParams.tolerance = 3;
+            identifyParams.returnGeometry = true;
+            identifyParams.layerIds = [2];
+            identify.execute(identifyParams,obtenerResultados);
+          }
+          
+          // Función qie obtiene los resultados devueltos por el identify
+          function obtenerResultados(evt){
+
+            
+            //Ocultamos el cartel de carga
+            $.mobile.loading('hide');
+            //Pintamos las seleccionadas en el mapa
+            //map.graphics.clear();
+            graphicsLayer.clear()
+            //$('#listaResult').empty();
+            $('listaResult.Check:not(:has(li))').html('<li>No se encontraron parcelas</li>');
+            $("#listaResult").empty();
+            
+            var lista = $("#listaResult");
+            
+            if(evt.length>1){
+              for ( var i in evt ) {
+                //console.log( evt[i] );
+                resultados.push(
+                  {
+                    id:i,
+                    valor:evt[i].feature
+                  });
+                graphicsLayer.add(new Graphic(evt[i].feature.geometry, fillSymbolSelect));
+                lista.append('<li onclick="fpulsada('+ i +');"><a href="#pageDetails"><h2>' + evt[i].feature.attributes.STATE_NAME  + '</h2><p><strong>' + evt[i].feature.attributes.POP2000  + '</strong></p><p>' + evt[i].feature.attributes.POP00_SQMI  + '</p></a></li>');
+              }
+              lista.listview().listview('refresh');
+              graphicsLayer.redraw();
+               //$("#listaResult").listview("refresh");
+              if ($('#btnBorraGrafico').length==0) {
+                $("#listaIdenty").append('<div id="btnBorraGrafico" style="margin: 10px; height:40px; text-align:center"><button onclick="borrarSel();" class="ui-btn">Limpiar Selección</button></div>');
+                $("#listaIdenty").append('<div id="btnIraList" style="margin: 10px; height:40px; text-align:center"><button onclick="iraLista();" class="ui-btn">Ir al Selección</button></div>');
+              }
+              //Mostrmos la siguiente pantalla  
+              //$(":mobile-pagecontainer" ).pagecontainer( "change", "#page2", { role: "page" } );
+              $.mobile.pageContainer.pagecontainer('change', "#page2", {
+                transition: 'slide',
+                reload    : true
+              });
+            }else{
+              //Si solo es un elemento pasar directamente  a la pantalla de detalle
+              poligonoSel=evt[0].feature.geometry;
+              resultados.push(
+                {
+                  id:0,
+                  valor:evt[0].feature
+                });
+              fpulsada('');
+              $.mobile.pageContainer.pagecontainer('change', "#pageDetails", {
+                transition: 'slide',
+                reload    : true
+              });
+
+            }
+
+          }
+        
+          map.on("extent-change",function(pnt,extent){
+             var centro=pnt.extent.getCenter();
+             
+             $("#txtCoordX").html(centro.x.toFixed(2));
+             $("#txtCoordY").html(centro.y.toFixed(2));
+          });
+
+          on(dojo.byId("iraCoord"),"click",function(){
+            //alert($("#txtCoordX").text);
+            var coordX=$("#txtCoordXEntrada").val();
+            var coordY=$("#txtCoordYEntrada").val();
+
+            var coordXDoble = parseFloat(coordX);
+            var coordYDoble = parseFloat(coordY);
+             if ((!isNaN(coordXDoble)) && (!isNaN(coordYDoble)) ){
+                var punto =new Point(coordXDoble,coordYDoble, new SpatialReference({ wkid: 25830  }));
+                map.centerAt(punto);
+                $("#left-panel").panel("close");
+             }else{
+                $('#popupCoordenadas').show();
+                $('#popupCoordenadas').popup();
+                $('#popupCoordenadas').popup('open',{
+                  transition:"slideup",
+                });
+              
+               
+             }
+
+          });
+
+     
+          dojo.connect(basemapGallery, 'onError', function (msg) {
+            console.log(msg)
+          });
+
+          dojo.connect(map, 'onLoad', function (evt) {
+            $(document).ready(jQueryReady);
+          });
+
+          $("#left-panel").panel({
+            close: function( event, ui ) {
+            }
+          });
+
+          //Si estamos dibujando para la seleccion agregamos un punto en cada vertice para saber donde hemos pulsado
+          map.on("click",function(evt){
+            if(pintando){
+              graphicsLayer.add(new Graphic(evt.mapPoint, markerSymbolVertex));
+            }
+            if(pintandoMedidas){
+              graphicsLayerMedidas.add(new Graphic(evt.mapPoint, markerSymbolVertex));
+            }
+            
+          });
+
+         
+
+          //Centramos el mapa en esta posicion
+          map.centerAndZoom(new Point(-99.843,42.003, new SpatialReference({ wkid: 4326  })),3);
+
+
+
+          $("#chkCentroCoord").on('change',function(evt){
+            if($("#chkCentroCoord").is(":checked")){
+              $("#cruzCoordenadas").css("display","block");
+            }else{
+               $("#cruzCoordenadas").css("display","none");
+            }
+          });
+
+
+          $( "#slider-2" ).bind( "change", function(event, ui) {
+
+              USA.setOpacity(event.currentTarget.value);
+              USA.refresh();
+          });
+
+          //Geocoder
+          $( "#iraGeocoder" ).bind( "click", function(event, ui) {
+            var objAddress = { 
+              "SingleLine" : $("#txtLocalizacion").val()
+            }
+            var params = { 
+              address : objAddress,
+              outFields : ["Loc_name"]
+            }
+            /*
+             * Step: Execute the task
+             */
+              $.mobile.loading( 'show', {
+              text: 'Buscando información',
+              textVisible: true,
+              theme: 'a',
+              html: ""
+            });
+
+            locator.addressToLocations(params);
+
+          });
+
+          function showResultsLocalizacion(candidates){
+            //Ocultamos el cartel de carga
+            $.mobile.loading('hide');
+             // Define the symbology used to display the results
+            var symbolMarker = new SimpleMarkerSymbol();
+            symbolMarker.setStyle(SimpleMarkerSymbol.STYLE_CIRCLE);
+            symbolMarker.setColor(new Color([255, 0, 0, 0.75]));
+            var font = new Font("14pt", Font.STYLE_NORMAL, Font.VARIANT_NORMAL, "Helvetica");
+
+            // loop through the array of AddressCandidate objects
+            var geometryLocation;
+
+            array.every(candidates.addresses, function(candidate) {
+        
+              // if the candidate was a good match
+              if (candidate.score > 80) {
+
+                // retrieve attribute info from the candidate
+                var attributesCandidate = {
+                  address : candidate.address,
+                  score : candidate.score,
+                  locatorName : candidate.attributes.Loc_name
+                };
+
+                /*
+                 * Step: Retrieve the result's geometry
+                 */
+                geometryLocation = candidate.location;
+
+                /*
+                 * Step: Display the geocoded location on the map
+                 */
+                 map.graphics.clear();
+                var graphicResult = new Graphic(geometryLocation, symbolMarker, attributesCandidate);
+                map.graphics.add(graphicResult);
+
+                // display the candidate's address as text
+                var sAddress = candidate.address;
+                var textSymbol = new TextSymbol(sAddress, font, new Color("#FFFFFF"));
+                textSymbol.setOffset(0, -22);
+                map.graphics.add(new Graphic(geometryLocation, textSymbol));
+
+                // exit the loop after displaying the first good match
+                return false;
+              }
+            });
+
+            // Center and zoom the map on the result
+            if (geometryLocation !== undefined) {
+              map.centerAndZoom(geometryLocation, 15);
+            }
+
+          }
+
+          on(dojo.byId("buscarMuni"), "click", function(evt) {
+            buscarMunicipio(dojo.byId("selectMuni").value);
+          });
+
+
+          function buscarMunicipio(muni) {
+          var buscarMuni = new esri.tasks.QueryTask("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/3");
+          var queryMuni = new Query();
+            queryMuni.where = "state_name = '" + muni + "'";
+          queryMuni.outFields = ["*"];
+          queryMuni.returnGeometry = true;      
+           $.mobile.loading( 'show', {
+              text: 'Buscando Ciudades',
+              textVisible: true,
+              theme: 'a',
+              html: ""
+            });
+
+          buscarMuni.execute(queryMuni, obtenerResultadosMuni);
+          
+        }
+
+        
+        
+        function obtenerResultadosMuni(results) {
+
+          //Ocultamos el cartel de carga
+          $.mobile.loading('hide');
+          //Pintamos las seleccionadas en el mapa
+          //map.graphics.clear();
+          graphicsLayer.clear()
+          //$('#listaResult').empty();
+          $('listaResult.Check:not(:has(li))').html('<li>No se encontraron estados</li>');
+          $("#listaResult").empty();
+          
+          var lista = $("#listaResult");
+          resultados = new Array();
+          
+          if (results.features.length == 0) {
+            lista.append('<li>No se encontraron estados</li>');
+            $.mobile.pageContainer.pagecontainer('change', "#page2", {
+              transition : 'slide',
+              reload : true
+            });
+          } else if (results.features.length == 1) {
+            //Si solo es un elemento pasar directamente  a la pantalla de detalle
+            poligonoSel = results.features[0].geometry;
+            resultados.push({
+              id : 0,
+              valor : results.features[0]
+            });
+            fpulsada('');
+            $.mobile.pageContainer.pagecontainer('change', "#pageDetails", {
+              transition : 'slide',
+              reload : true
+            });
+
+          } else {
+            for (var i = 0 ; i < results.features.length ; i++ ) {
+              //console.log( evt[i] );
+              resultados.push({
+                id : i,
+                valor : results.features[i]
+              });
+              graphicsLayer.add(new Graphic(results.features[i].geometry, fillSymbolSelect));
+              lista.append('<li onclick="fpulsada(' + i + ');"><a href="#pageDetails"><h2>Nombre del estado:' + results.features[i].attributes.state_name + '</h2><p><strong>Población: ' + results.features[i].attributes.pop2000 + '</strong></p><p>Media: ' + results.features[i].attributes.pop00_sqmi + '</p></a></li>');
+
+            }
+            lista.listview().listview('refresh');
+            graphicsLayer.redraw();
+            //$("#listaResult").listview("refresh");
+            if ($('#btnBorraGrafico').length == 0) {
+              $("#listaMuni").append('<div id="btnBorraGrafico" style="margin: 10px; height:40px; text-align:center"><button onclick="borrarSel();" class="ui-btn">Limpiar Selección</button></div>');
+              $("#listaMuni").append('<div id="btnIraList" style="margin: 10px; height:40px; text-align:center"><button onclick="iraLista();" class="ui-btn">Ir al Selección</button></div>');
+            }
+            //Mostrmos la siguiente pantalla
+            //$(":mobile-pagecontainer" ).pagecontainer( "change", "#page2", { role: "page" } );
+            $.mobile.pageContainer.pagecontainer('change', "#page2", {
+              transition : 'slide',
+              reload : true
+            });
+          } 
+        }
+
+        //$("#btnRestaBotones");
+        on(dojo.byId("btnRestaBotones"),"click",function(){
+             $("#btnPpal").show();
+             $("#btnAtrasOculto").hide();
+        });
+        on(dojo.byId("btnRestaBotonesDetalle"),"click",function(){
+             $("#btnPpal").show();
+             $("#btnAtrasOculto").hide();
+        });
+         
+        on(dojo.byId("marcaSanFran"),"click",function(){
+          map.centerAndZoom(new Point(-122.387, 37.727,new SpatialReference({ wkid: 4326 })),7);
+        });
+        on(dojo.byId("marcaAlbuquerque"),"click",function(){
+          map.centerAndZoom(new Point(-106.655, 35.066,new SpatialReference({ wkid: 4326 })),7)
+        });
+        on(dojo.byId("marcaDetroit"),"click",function(){
+          map.centerAndZoom(new Point(-122.387, 37.727,new SpatialReference({ wkid: 4326 })),7);
+        });
+       
+    //Del requiere
+    });
+    
+    /* Funcion que es llamada cuando pulsamos sobre alguna parcela*/
+    function fpulsada(evt){
+      for(var i=0;i<resultados.length;i++){
+        if(resultados[i].id==evt){
+          $("#listaDetalles").empty();
+          var lista = $("#listaDetalles");
+          $.each(resultados[i].valor.attributes, function( key, value ) {
+            if(key!="Shape"){
+              $("#listaDetalles").append('<li><h2>' + key + ':</h2><p><strong>' + value + '</strong></p></li>');
+            }
+          });
+            poligonoSel=resultados[i].valor.geometry;
+            lista.listview().listview('refresh');
+        }
+      }
+    }
+
+    //Borramos los graficos del mapa
+    function borrarSel(){
+      map.graphics.clear();
+      graphicsLayer.clear();
+      $("#btnBorraGrafico").remove();
+      $("#btnIraList").remove();
+    }
+
+     function borrarSelMedidas(){
+      graphicsLayerMedidas.clear();
+      $("#btnBorraGraficoMedidas").remove();
+      $("#divVerMedidas").remove();
+    }
+
+    function btnVerMedidas(){
+      var posicion=map.height;
+      $('#popupDistancias').show();
+      $('#popupDistancias').popup();
+      $('#popupDistancias').popup('open',{
+        transition:"slideup",
+        positionTo:"origin",
+        y:posicion
+      });
+    }
+
+    function iraLista(){
+      $.mobile.pageContainer.pagecontainer('change', "#page2", {
+        transition: 'slide',
+        reload    : true
+      });
+      
+    }
+
+    function dibuja(evt){
+      //Cerramos el panel
+      $("#left-panel").panel("close");
+      
+      switch(evt.toLowerCase())
+      {
+      case "point":
+        tool=esri.toolbars.Draw.POINT;
+        break;
+      case "polyline":
+        tool=esri.toolbars.Draw.POLYLINE;
+        break;
+      case "polygon":
+        tool=esri.toolbars.Draw.POLYGON;
+        break;
+      case "extent":
+        tool=esri.toolbars.Draw.EXTENT;
+        break;
+      default:
+        tool=esri.toolbars.Draw.POINT;
+      }
+
+      tb.activate(tool);
+      // Establecemos la variable pintando a true para que sepa que 
+      // hemos comenzado a dibujar, si es punto no es necesario capturar el evento
+      if(tool!="point"){
+        pintando=true;
+      }
+
+    }
+
+    function jQueryReady() {
+
+      var alto=$('#map').height();
+      var ancho=$('#map').width();
+        $('#cruzCoordenadas').css('top',(alto/2)-$('#cruzCoordenadas').height()/2);
+        $('#cruzCoordenadas').css('left',(ancho/2)-$('#cruzCoordenadas').width()/2);
+
+        //Cargamos el combo 
+        CargarMuni();
+
+    }
+
+      function CargarMuni(){
+            for (var i = 0 ; i < municipios.length ; i++ ) {
+               $('#selectMuni').append('<option>'+municipios[i]+'</option>');
+              
+            }
+
+        }
+
+
+    function fClickVerEnMapa(){
+     
+     
+     $("#btnPpal").hide();
+     $("#btnAtrasOculto").show();
+     
+     
+      $.mobile.pageContainer.pagecontainer('change', "#page", {
+        transition: 'flip',
+        reload    : true
+      });
+      var taxLotExtent = poligonoSel.getExtent();
+      map.setExtent(taxLotExtent);
+
+      require(["esri/graphic","esri/symbols/SimpleFillSymbol","esri/symbols/SimpleLineSymbol","dojo/_base/Color"],
+        function(Graphic,SimpleFillSymbol,SimpleLineSymbol,Color){
+          map.graphics.clear();
+          var fillSymbolSelect = new SimpleFillSymbol(esri.symbol.SimpleFillSymbol.STYLE_SOLID,
+          new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID,
+          new dojo.Color([255,255,0]), 4),new dojo.Color([255,255,0,0.25]));
+
+          map.graphics.add(new Graphic(poligonoSel, fillSymbolSelect));
+          
+      });
+  
+
+       
+    }
+
+
+
+
+  </script>
+</head>
+
+<body>
+  <div data-role="page" id="page">
+    <!-- header -->
+    <div data-theme="b" data-role="header" id="header" data-position="fixed">
+      <h3>Plantilla JQuery Mobile  + API JavaScript ArcGIS</h3>
+      <a href="#right-panel" data-rel="panel" data-icon="grid" data-iconpos="notext" data-shadow="false" data-iconshadow="false" class="ui-btn-right">Menu</a>
+       <a data-rel="back" data-iconpos="notext" data-icon="back" id="btnAtrasOculto" style="display='none'" class="ui-btn-left"></a>
+       <a id="btnPpal" href="#left-panel" data-icon="bars" id="menuPpal" class="ui-btn-left">Menú</a>
+    </div>
+
+    <!-- content -->
+    <div data-role="content" id="pageContentMap" >
+      <div id="map">
+        <div id="LocateButton"></div>
+        <img id="cruzCoordenadas" src="images/cruz.png"></img>
+        <div id="custom-border-radius" class="botonLeyenda">
+          <a href="#left-panel-legend" id="LegendButton" class="ui-btn ui-icon-bars ui-btn-icon-notext ">No text</a> <!--ui-corner-all-->
+        </div>
+      </div>
+    </div>
+    
+    <!--Panel con la galeria de mapas -->
+    <div class="rp" data-role="panel" data-display="overlay" data-swipe-close="false" id="right-panel" data-theme="b" data-position="right">
+      <h3 id="textoGaleria">Galería de Mapas Base</h3>
+      <div id="galleryDiv"></div>
+    </div>
+
+    <!--Panel con las opciones de menú -->
+    <div class="rp" data-role="panel" data-swipe-close="false" id="left-panel" data-theme="b"  data-display="overlay" data-position="left" >
+      <ul data-role="listview" >
+        <!--Lista para los marcadores -->
+        <li data-role="collapsible" data-inset="false" data-icon="arrow-d" data-iconpos="right">
+          <h3>Marcadores</h3>
+          <ul data-role="listview" data-theme="a" data-inset="true"  data-divider-theme="e">
+            <li><a id="marcaSanFran">San Franciso</a></li>
+            <li><a id="marcaAlbuquerque">Albuquerque</a></li>
+            <li><a id="marcaDetroit">Detroit</a></li>
+          </ul>
+        </li>
+        <!--Lista para las herramientas de identificar -->
+        <li data-role="collapsible" data-inset="false" data-iconpos="right" id="listaIdenty">
+          <h3>Identificar</h3>
+          <table id="tablaIndentify" class="center">
+            <tr>
+              <td>
+                <div id="custom-border-radius">
+                  <a href="javascript:dibuja('Point');" class="ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all imgPunto">
+                   </a>         
+                  <a>Punto</a>
+                </div>
+              </td>
+              <td>
+                <div id="custom-border-radius">
+                  <a href="javascript:dibuja('Polyline');" class="ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all">
+
+                  <a>Línea</a>
+                </div>
+              </td> 
+            </tr>
+            <tr>
+              <td>
+                <div id="custom-border-radius">
+                  <a href="javascript:dibuja('Polygon');" class="ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all">No text</a>
+                  <a>Poligono</a>
+                </div>
+              </td>
+              <td>
+                <div id="custom-border-radius">
+                  <a href="javascript:dibuja('Extent');" class="ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all">No text</a>
+                  <a>Cuadrado</a>
+                </div>
+              </td> 
+            </tr>
+          </table>
+          <div style="width:245px; height:30px; text-align:center">
+                <p><b>Identifique estados dibujando puntos,<br> líneas, polígonos o cuadrados</b></p>
+          </div>
+        </li>
+        <!--Lista para las herramientas de medir -->
+        <li data-role="collapsible" data-inset="false" data-iconpos="right" id="listaIdentyMedir">
+          <h3>Medir</h3>
+          <table id="tablaIndentify" class="center">
+            <tr>
+            <td>
+              <div id="custom-border-radius">
+                <a id="botonMedirArea" class="ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all">No text</a>
+                <a>Área</a>
+              </div>
+            </td>
+            <td>
+              <div id="custom-border-radius">
+                <a id="botonMedirDistancia" class="ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all">No text</a>
+                <a>Distancia</a>
+              </div>
+            </td> 
+          </tr>
+          </table>
+          <div style="width:245px; height:30px; text-align:center">
+                <p><b>Mida distancias y áreas dibujando<br> sobre el mapa</b></p>
+          </div>
+        </li>
+         <li data-role="collapsible" data-inset="false" data-iconpos="right" id="listaCoordenadas">
+          <h3>Coordenadas</h3>
+          <table id="tablaCoordenadas" class="center">
+            <tr>
+              <td>
+                <label for="basic">X:</label>
+              </td>
+              <td>
+                <input id="txtCoordXEntrada" type="number" name="name" value=""  />
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <label for="basic">Y:</label>
+              </td>
+              <td>
+                <input id="txtCoordYEntrada" type="number" name="name" value=""  />
+              </td>
+            </tr>
+          </table>
+          <div style="width:245px; height:30px; text-align:center">
+             <a id="iraCoord" data-role="button">Ir a coordenadas</a>
+          </div>
+
+          <table id="tablaCoordenadas3" class="center">
+
+            <tr>
+              <td>
+                <br>
+                <label for="basic">X:</label>
+              </td>
+              <td>
+                 <br>
+               <label id="txtCoordX" for="basic">32.22233</label>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <label  for="basic">Y:</label>
+              </td>
+              <td>
+               <label id="txtCoordY" for="basic">32.22233</label>
+              </td>
+            </tr>
+            
+              
+            
+          </table>
+           <label><input id="chkCentroCoord" type="checkbox" name="checkbox-0" /> Ver centro </label>
+        </li>
+        <li data-role="collapsible" data-inset="false" data-iconpos="right" id="transparencia">
+          <h3>Transparencia Servicio</h3>
+          <label for="slider-2">Transparencia Servicio</label>
+          <input type="range" name="slider-2" id="slider-2" value="1" min="0" max="1" data-highlight="true" data-mini="true" step="0.1">
+        </li>
+         <li data-role="collapsible" data-inset="false" data-iconpos="right" id="transparencia">
+          <h3>Localizador</h3>
+           <table id="tablaCoordenadas" class="center">
+            <tr>
+              <td>
+                <label for="basic">Ir a:</label>
+              </td>
+              <td>
+                <input id="txtLocalizacion"  />
+              </td>
+            </tr>
+            
+          </table>
+           <div style="width:245px; height:30px; text-align:center">
+             <a id="iraGeocoder" data-role="button">Ir a sitio</a>
+          </div>
+          </br>
+        </li>
+
+        <li data-role="collapsible" data-inset="false" data-iconpos="right" id="listaMuni">
+            <h3>Buscar por estado</h3>
+            <table id="tablaBuscMuni" class="center">
+              <tr>
+                <td><label for="basic">Estado:</label></td>
+                <td>
+                <!--<input id="txtMuniEntrada" type="text" name="name" value=""  />-->
+                <select data-placeholder="true" name="select-choice-1" id="selectMuni">
+                </td>
+
+              </tr>
+            </table>
+            <div style="width:245px; height:30px; text-align:center">
+              <a id="buscarMuni" data-role="button">Buscar</a>
+            </div>
+            
+           
+
+            </select>
+            </br>
+          </li>
+
+      </ul>
+    </div>
+
+    <!--Panel del toc -->
+    <div class="rp" data-display="overlay" data-role="panel" data-swipe-close="false" id="left-panel-legend" data-theme="b" data-position="left" >
+      <div data-theme="b" id="tocDiv"></div>
+    </div>
+
+  </div>
+
+  <!-- pagina con el listado de parcelas seleccionadas-->
+  <div data-role="page" id="page2">
+      <div data-role="header">
+        <h1>Resultados de la búsqueda</h1>
+         <a data-rel="back" id="btnRestaBotones"  data-iconpos="notext" data-icon="arrow-l" class="ui-btn-left">Menú</a>
+      </div>
+      <div role="main" class="ui-content">
+        <ul data-role="listview" data-filter="true" data-inset="true" id="listaResult">
+        </ul>
+      </div>
+  </div>
+
+  <!-- pagina de los detalles de la parcela-->
+  <div data-role="page" id="pageDetails">
+      <div data-role="header">
+        <h1>Información del servicio</h1>
+         <a data-rel="back" id="btnRestaBotonesDetalle"  data-iconpos="notext" data-icon="arrow-l" class="ui-btn-left">Menú</a>
+      </div>
+      <div role="main" class="ui-content">
+        <button onclick="fClickVerEnMapa();" class="ui-btn ui-btn-b ui-corner-all">Ver en el Mapa</button>
+        <ul data-role="listview" data-filter="true" data-inset="true" id="listaDetalles">
+        </ul>
+      </div>
+  </div>
+
+  <!-- Pagina con los detalles de la parcela-->
+  <div data-role="page" id="pageDetailsMap">
+    <div data-role="header">
+      <h1>Ubicación</h1>
+       <a data-rel="back" data-iconpos="notext" data-icon="arrow-l" class="ui-btn-left"></a>
+    </div>
+    <div role="main" class="ui-content">
+      <div id="mapDetails" style="width='100%'; height='500px';">
+        <div id="LocateButton2"></div>
+      </div>
+    </div>
+  </div>
+
+  <div data-role="popup" id="popupMenu" data-theme="b" >
+    <p style="text-align:center">Pulse en la pantalla para comenzar a medir pulsando sobre el Mapa</p>
+  </div>
+   <div  data-role="popup" id="popupDistancias" data-theme="b" >
+     <!--<a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right">Close</a>-->
+    <p style="text-align:center" id="pDistancias"></p>
+  </div>
+   <div  data-role="popup" id="popupCoordenadas" data-theme="b" >
+     <!--<a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right">Close</a>-->
+    <p style="text-align:center" id="pDistancias">El formato de las coordenadas no es correcto</p>
+  </div>
+
+
+</body>
+</html>
